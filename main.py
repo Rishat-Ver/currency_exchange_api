@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
+from app.api import router
 from app.core import sessionmanager
 
 
@@ -14,7 +15,7 @@ async def lifespan(app: FastAPI, aioredis=None):
 
 
 app = FastAPI(lifespan=lifespan)
-
+app.include_router(router)
 
 # admin = Admin(
 #     app=app,
