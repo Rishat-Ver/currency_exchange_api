@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.models import User
 from app.api.schemas import CreateUserSchema
 from app.core.database import get_db_session
+from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -30,3 +31,10 @@ async def create_user(
     session.add(new_user)
     await session.commit()
     return new_user
+
+
+@router.get("/me")
+async def get_current_user(user: User = Depends(get_current_user)):
+    """Получение текущего юзера."""
+
+    return user.username
