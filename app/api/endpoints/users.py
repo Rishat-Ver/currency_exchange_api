@@ -34,7 +34,7 @@ async def create_user(
 
 
 @router.get("/me")
-async def get_current_user(user: User = Depends(get_current_user)):
+async def get_me(user: User = Depends(get_current_user)):
     """Получение текущего юзера."""
 
     return user.username

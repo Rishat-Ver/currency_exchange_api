@@ -5,10 +5,12 @@ from fastapi import FastAPI
 
 from app.api import router
 from app.core import sessionmanager
+from app.utils.currencies import fetch_currency_data
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI, aioredis=None):
+    await fetch_currency_data()
     yield
     if sessionmanager.engine is not None:
         await sessionmanager.close()
