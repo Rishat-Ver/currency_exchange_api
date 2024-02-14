@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.models import User
 from app.api.schemas import DataToken, Token
+
 from app.core.config import settings
 from passlib.context import CryptContext
 
@@ -55,6 +56,8 @@ async def login(
 ):
     """Авторизация юзера."""
 
+    print(userdetails)
+    print(userdetails.username, userdetails.password)
     stmt = select(User).filter(userdetails.username == User.username)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
