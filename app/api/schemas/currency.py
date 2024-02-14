@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, field_validator
 
 
@@ -9,3 +11,10 @@ class Currency(BaseModel):
     name: str
 
     normalize_name = field_validator("name")(normalize)
+
+
+class ResponseCurrency(BaseModel):
+    time: datetime
+    source: str
+    quotes: dict
+

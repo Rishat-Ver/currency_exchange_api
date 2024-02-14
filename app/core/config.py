@@ -17,8 +17,9 @@ class AuthSettings(BaseModel):
 
 
 class CurrencySettings(BaseModel):
-    URL: str
+    LIST: str
     KEY: str
+    EXCRATES: str
 
 
 class Settings(BaseSettings):

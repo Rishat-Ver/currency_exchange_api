@@ -1,11 +1,11 @@
 import json
 
 import aiohttp
-import asyncio
+from redis import asyncio as aioredis
 
 from app.api.schemas import Currency
 from app.core.config import settings
-from redis import asyncio as aioredis
+
 
 redis = aioredis.from_url(
     "redis://localhost:6379", encoding="utf8", decode_responses=True
@@ -33,7 +33,7 @@ async def fetch_currency_data():
     if cached_currencies is not None:
         return cached_currencies
 
-    url = settings.API.URL
+    url = settings.API.LIST
     headers = {"apikey": settings.API.KEY}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
