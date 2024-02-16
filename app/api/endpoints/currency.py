@@ -1,27 +1,40 @@
+import json
 from datetime import datetime
 
 import aiohttp
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-
+from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
 
-from redis import asyncio as aioredis
+
+from app.utils import redis_tool
+from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/currency", tags=["Currency"])
 
-redis = aioredis.from_url(
-    "redis://localhost:6379", encoding="utf8", decode_responses=True
-)
-
 
 @router.get("/exchange_rate")
-async def get_exchange_rates(source: str = "USD", currencies: str = None):
-    cache = await redis.get("currencies")
+async def get_exchange_rates(
+    source: str = "USD", currencies: str = None, user: User = Depends(get_current_user)
+):
+    """
+    Получение обменных курсов валют.
+    Права доступа — авторизованный пользователь.
+    """
 
-    currency_list = currencies.split(",")
-    if not all(elem in cache for elem in currency_list):
+    if source == currencies:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currencies must be different",
+        )
+    cache = await redis_tool.get_currency("currencies")
+    print(json.loads(cache))
+
+    currency_list = currencies.replace(" ", "").split(",")
+
+    if not all(elem in cache for elem in currency_list) or source not in cache:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency code!"
         )
