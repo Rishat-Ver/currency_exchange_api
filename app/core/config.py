@@ -16,9 +16,16 @@ class AuthSettings(BaseModel):
     KEY: str
 
 
+class CurrencySettings(BaseModel):
+    LIST: str
+    KEY: str
+    EXCRATES: str
+
+
 class Settings(BaseSettings):
     DB: PostgresqlSettings
     AUTH: AuthSettings
+    API: CurrencySettings
 
     model_config = SettingsConfigDict(
         env_file=dotenv.find_dotenv(".env"),

@@ -18,6 +18,8 @@ pyjwt = {extras = ["crypto"], version = "^2.8.0"}
 passlib = "^1.7.4"
 python-multipart = "^0.0.9"
 bcrypt = "^4.1.2"
+aiohttp = "^3.9.3"
+fastapi-cache2 = {extras = ["redis"], version = "^0.2.1"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
