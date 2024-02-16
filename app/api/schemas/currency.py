@@ -17,4 +17,3 @@ class ResponseCurrency(BaseModel):
     time: datetime
     source: str
     quotes: dict
-
