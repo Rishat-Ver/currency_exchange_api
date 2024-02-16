@@ -21,6 +21,10 @@ def hash_pass(password: str):
 async def create_user(
     user: CreateUserSchema, session: AsyncSession = Depends(get_db_session)
 ):
+    """
+    Создание нового пользователя.
+    """
+
     hash_password = hash_pass(user.password)
     new_user = User(
         username=user.username,

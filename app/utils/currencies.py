@@ -1,27 +1,23 @@
 import json
 
 import aiohttp
-from redis import asyncio as aioredis
+
 
 from app.api.schemas import Currency
 from app.core.config import settings
-
-
-redis = aioredis.from_url(
-    "redis://localhost:6379", encoding="utf8", decode_responses=True
-)
+from app.utils import redis_tool
 
 
 async def cache_currencies(currencies):
     # Сериализация списка валют для кеширования
     currencies_data = json.dumps([currency.name for currency in currencies])
     # Кешируем на 30 дней
-    await redis.set("currencies", currencies_data, ex=2592000)
+    await redis_tool.set_currency("currencies", currencies_data, ex=2592000)
 
 
 async def get_cached_currencies():
     # Получение кешированных данных из Redis
-    cached = await redis.get("currencies")
+    cached = await redis_tool.get_currency("currencies")
     if cached:
         names = json.loads(cached)
         return [Currency(name=name) for name in names]
@@ -46,13 +42,3 @@ async def fetch_currency_data():
             else:
                 print(f"Error {response.status}")
                 return None
-
-
-# async def main():
-#     cached_currencies = await fetch_currency_data()
-#     for currency in cached_currencies:
-#         print(currency.name)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(main())
