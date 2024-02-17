@@ -1,7 +1,7 @@
-from datetime import date
 import re
+from datetime import date
 
-from pydantic import BaseModel, EmailStr, field_validator, NonNegativeFloat
+from pydantic import BaseModel, EmailStr, NonNegativeFloat, field_validator
 
 
 class Token(BaseModel):
