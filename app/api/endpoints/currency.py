@@ -1,15 +1,12 @@
-import json
 from datetime import datetime
 
 import aiohttp
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
-
-
-from app.utils import redis_tool
+from app.utils.currencies import check_currencies
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/currency", tags=["Currency"])
@@ -23,26 +20,15 @@ async def get_exchange_rates(
     Получение обменных курсов валют.
     Права доступа — авторизованный пользователь.
     """
-
-    if source == currencies:
+    if source == currencies or len(source) > 3:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Currencies must be different",
+            detail=f"Invalid data: Currencies and source must be different; "
+            f"Source Currency must follow the Example: source=EUR",
         )
-    cache = await redis_tool.get_currency("currencies")
-    print(json.loads(cache))
-
-    currency_list = currencies.replace(" ", "").split(",")
-
-    if not all(elem in cache for elem in currency_list) or source not in cache:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency code!"
-        )
-
-    param_currency = (
-        "%2C".join(currency_list) if len(currency_list) > 1 else currency_list[0]
-    )
-    url = f"{settings.API.EXCRATES}?source={source}&currencies={param_currency}"
+    source = await check_currencies(source)
+    currencies = await check_currencies(currencies)
+    url = f"{settings.API.EXCRATES}?source={source}&currencies={currencies}"
     headers = {"apikey": settings.API.KEY}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -57,3 +43,8 @@ async def get_exchange_rates(
                 )
 
     return response
+
+
+@router.put("/exchange_money")
+async def exchange_money(currency: str, user: User = Depends(get_current_user)):
+    pass

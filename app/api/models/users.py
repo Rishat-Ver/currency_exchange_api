@@ -1,9 +1,9 @@
 from datetime import date
+from enum import Enum as PyEnum
 
 from sqlalchemy import BigInteger, Numeric
 from sqlalchemy.dialects.postgresql import BIGINT
-from sqlalchemy.orm import DeclarativeBase, declared_attr, Mapped, mapped_column
-from enum import Enum as PyEnum
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
 class Base(DeclarativeBase):
