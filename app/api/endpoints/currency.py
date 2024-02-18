@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
-from app.utils.currencies import check_currencies
+from app.utils.currencies import check_currencies, prepare_exchange_request
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/currency", tags=["Currency"])
@@ -15,22 +15,26 @@ router = APIRouter(prefix="/currency", tags=["Currency"])
 @router.get("/exchange_rate")
 async def get_exchange_rates(
     source: str = Query(default="USD", max_length=3),
-    currencies: str = None,
+    currencies: list[str] = Query(default=None),
     user: User = Depends(get_current_user),
 ):
     """
     Получение обменных курсов валют.
     Права доступа — авторизованный пользователь.
     """
-    if source == currencies:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid data: Currencies and source must be different",
-        )
+
     source = await check_currencies(source)
-    currencies = await check_currencies(currencies)
-    url = f"{settings.API.EXCRATES}?source={source}&currencies={currencies}"
-    headers = {"apikey": settings.API.KEY}
+
+    if currencies is not None:
+        if len(currencies) == 1 and source == currencies[0]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid data: Currencies and source must be different",
+            )
+        currencies = [await check_currencies(currency) for currency in currencies]
+
+    url, headers = await prepare_exchange_request(source, currencies)
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
             if response.status == 200:
@@ -42,7 +46,8 @@ async def get_exchange_rates(
                     source=data["source"],
                     quotes=data["quotes"],
                 )
-
+            else:
+                response.raise_for_status()
     return response
 
 
