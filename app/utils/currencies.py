@@ -9,14 +9,16 @@ from app.utils import redis_tool
 
 
 async def cache_currencies(currencies):
-    # Сериализация списка валют для кеширования
+    """Сериализация списка валют для кеширования."""
+
     currencies_data = json.dumps([currency.name for currency in currencies])
     # Кешируем на 30 дней
     await redis_tool.set_currency("currencies", currencies_data, expiration=2592000)
 
 
 async def get_cached_currencies():
-    # Получение кешированных данных из Redis
+    """Получение кешированных данных из Redis."""
+
     cached = await redis_tool.get_currency("currencies")
     if cached:
         names = json.loads(cached)
@@ -25,6 +27,8 @@ async def get_cached_currencies():
 
 
 async def fetch_currency_data():
+    """Извлечение кодов валют."""
+
     cached_currencies = await get_cached_currencies()
     if cached_currencies is not None:
         return cached_currencies
@@ -45,6 +49,8 @@ async def fetch_currency_data():
 
 
 async def check_currencies(string: str | None):
+    """Проверка валют на валидность."""
+
     cache = await redis_tool.get_currency("currencies")
     if string:
         string = string.upper()

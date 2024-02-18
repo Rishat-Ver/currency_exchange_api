@@ -2,10 +2,13 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from sqladmin import Admin
 
 from app.api import router
+from app.api.admin.model import UserModelView
 from app.core import sessionmanager
 from app.utils.currencies import fetch_currency_data
+from app.api.admin.model import router as admin_router
 
 
 @asynccontextmanager
@@ -19,16 +22,12 @@ async def lifespan(app: FastAPI, aioredis=None):
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 
-# admin = Admin(
-#     app=app,
-#     session_maker=sessionmanager.session_maker,
-#     authentication_backend=AdminAuth(settings.AUTH.KEY),
-# )
-# admin.add_view(UserModelView)
-# admin.add_view(TaskModelView)
-# admin.add_view(UserTasksAssociationModelView)
-# app.include_router(router)
-# app.include_router(admin_router)
+admin = Admin(
+    app=app,
+    session_maker=sessionmanager.session_maker,
+)
+admin.add_view(UserModelView)
+app.include_router(admin_router)
 # add_pagination(app)
 
 if __name__ == "__main__":

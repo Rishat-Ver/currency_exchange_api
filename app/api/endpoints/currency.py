@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import aiohttp
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
@@ -14,17 +14,18 @@ router = APIRouter(prefix="/currency", tags=["Currency"])
 
 @router.get("/exchange_rate")
 async def get_exchange_rates(
-    source: str = "USD", currencies: str = None, user: User = Depends(get_current_user)
+    source: str = Query(default="USD", max_length=3),
+    currencies: str = None,
+    user: User = Depends(get_current_user),
 ):
     """
     Получение обменных курсов валют.
     Права доступа — авторизованный пользователь.
     """
-    if source == currencies or len(source) > 3:
+    if source == currencies:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid data: Currencies and source must be different; "
-            f"Source Currency must follow the Example: source=EUR",
+            detail=f"Invalid data: Currencies and source must be different",
         )
     source = await check_currencies(source)
     currencies = await check_currencies(currencies)
