@@ -3,7 +3,8 @@ from enum import Enum as PyEnum
 
 from sqlalchemy import BigInteger, Numeric
 from sqlalchemy.dialects.postgresql import BIGINT
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import (DeclarativeBase, Mapped, declared_attr,
+                            mapped_column)
 
 
 class Base(DeclarativeBase):
