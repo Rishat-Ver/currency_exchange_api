@@ -6,9 +6,9 @@ from sqladmin import Admin
 
 from app.api import router
 from app.api.admin.model import UserModelView
+from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
 from app.utils.currencies import fetch_currency_data
-from app.api.admin.model import router as admin_router
 
 
 @asynccontextmanager
