@@ -6,11 +6,7 @@ __all__ = (
     "CreateUserSchema",
     "Currency",
     "ResponseCurrency",
-    "CurrencyConvert",
-    "QueryCurrencyConvert",
-    "InfoCurrencyConvert",
 )
 
-from .currency import (Currency, CurrencyConvert, InfoCurrencyConvert,
-                       QueryCurrencyConvert, ResponseCurrency)
+from .currency import Currency, ResponseCurrency
 from .users import CreateUserSchema, DataToken, GetUsersSchema, Token, UserBase
