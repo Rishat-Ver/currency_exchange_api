@@ -1,13 +1,13 @@
 from datetime import date, datetime
 
-import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.models import User
-from app.api.schemas import (CurrencyConvert, InfoCurrencyConvert,
-                             QueryCurrencyConvert, ResponseCurrency)
+from app.api.schemas import ResponseCurrency
 from app.core.config import settings
-from app.utils.currencies import check_currencies, prepare_exchange_request
+from app.services.httpclientsession import http_client
+
+from app.utils.currencies import check_currencies, check_time
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/currency", tags=["Currency"])
@@ -34,26 +34,22 @@ async def get_exchange_rates(
             )
         currencies = [await check_currencies(currency) for currency in currencies]
 
-    url, headers = await prepare_exchange_request(source, currencies)
+    param_currency = "%2C".join(currencies) if currencies else ""
+    params = {"source": source, "currencies": param_currency}
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 200:
-                data = await response.json()
-                response_data = ResponseCurrency(
-                    time=datetime.utcfromtimestamp(data["timestamp"]).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                    source=data["source"],
-                    quotes=data["quotes"],
-                )
-            else:
-                response.raise_for_status()
+    data = await http_client(url=settings.API.EXCRATES, params=params)
+    response_data = ResponseCurrency(
+        time=datetime.utcfromtimestamp(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S"),
+        source=data["source"],
+        quotes=data["quotes"],
+    )
+
     return response_data
 
 
-@router.get("/convert")
-async def convert(
+@router.get("/show_convert")
+@check_time
+async def show_convert(
     amount: float = Query(description="The amount to be converted.", gt=0),
     currency_from: str = Query(
         ...,
@@ -69,17 +65,22 @@ async def convert(
         min_length=3,
         max_length=3,
     ),
-    time: date = date.today(),
+    time: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
     user: User = Depends(get_current_user),
 ):
-    if time > date.today():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="unknown exchange rate for the future",
-        )
+    """
+    Конвертирует указанную сумму из одной валюты в другую на заданную дату для аутентифицированных пользователей.
+    Проверяет валидность входных валют и даты, затем запрашивает курс конвертации через внешний API и возвращает
+    результат конвертации.
+    """
+    # time = validate_date(time)
+
     currency_from = await check_currencies(currency_from)
     currency_to = await check_currencies(currency_to)
-    url = "https://api.apilayer.com/currency_data/convert"
+
     params = {
         "to": currency_to.lower(),
         "from": currency_from.lower(),
@@ -87,15 +88,30 @@ async def convert(
         "date": str(time),
     }
 
-    headers = {"apikey": settings.API.KEY}
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers, params=params) as response:
-            if response.status == 200:
-                data = await response.json()
-                data["info"]["date"] = datetime.utcfromtimestamp(
-                    data["info"]["timestamp"]
-                ).strftime("%Y-%m-%d %H:%M:%S")
-                del data["info"]["timestamp"]
-            else:
-                response.raise_for_status()
+    data = await http_client(url=settings.API.CONVERT, params=params)
+    data["info"]["date"] = datetime.utcfromtimestamp(
+        data["info"]["timestamp"]
+    ).strftime("%Y-%m-%d %H:%M:%S")
+    del data["info"]["timestamp"]
+
     return data
+
+
+@router.get("/show_change")
+@check_time
+async def show_change(
+    start_date: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
+    end_date: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
+    curriencies: list[str] = Query(
+        default=None,
+        description="Enter a list of comma-separated currency codes to limit output currencies",
+    ),
+    source: str = "USD",
+):
+    return start_date, end_date

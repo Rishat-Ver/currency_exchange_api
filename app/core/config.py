@@ -20,6 +20,8 @@ class CurrencySettings(BaseModel):
     LIST: str
     KEY: str
     EXCRATES: str
+    CONVERT: str
+    CHANGE: str
 
 
 class Settings(BaseSettings):
