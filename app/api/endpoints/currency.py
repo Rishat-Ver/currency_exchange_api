@@ -6,7 +6,6 @@ from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
 from app.services.httpclientsession import http_client
-
 from app.utils.currencies import check_currencies, check_time
 from app.utils.users import get_current_user
 
@@ -105,17 +104,18 @@ async def show_change(
         default=date.today(),
         description="enter the date, no older than January 1, 1999",
     ),
-    curriencies: list[str] = Query(
+    source: str = "USD",
+    currencies: list[str] = Query(
         default=None,
         description="Enter a list of comma-separated currency codes to limit output currencies",
     ),
-    source: str = "USD",
 ):
+    param_currency = "%2C".join(currencies) if currencies else ""
     params = {
-        "to": source.lower(),
-        "from": currency_from.lower(),
-        "amount": amount,
-        "date": str(time),
+        "start_date": str(start_date),
+        "end_date": str(end_date),
+        "source": source,
+        "currencies": param_currency,
     }
-
-    data = await http_client(url=settings.API.CONVERT, params=params)
+    data = await http_client(url=settings.API.CHANGE, params=params)
+    return data
