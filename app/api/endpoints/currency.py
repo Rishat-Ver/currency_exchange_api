@@ -14,6 +14,7 @@ router = APIRouter(prefix="/currency", tags=["Currency"])
 
 
 @router.get("/exchange_rate")
+@check_currencies
 async def get_exchange_rates(
     source: str = Query(default="USD", max_length=3),
     currencies: list[str] = Query(default=None),
@@ -24,15 +25,12 @@ async def get_exchange_rates(
     Права доступа — авторизованный пользователь.
     """
 
-    source = await check_currencies(source)
-
     if currencies is not None:
         if len(currencies) == 1 and source == currencies[0]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid data: Currencies and source must be different",
             )
-        currencies = [await check_currencies(currency) for currency in currencies]
 
     param_currency = "%2C".join(currencies) if currencies else ""
     params = {"source": source, "currencies": param_currency}
@@ -49,6 +47,7 @@ async def get_exchange_rates(
 
 @router.get("/show_convert")
 @check_time
+@check_currencies
 async def show_convert(
     amount: float = Query(description="The amount to be converted.", gt=0),
     currency_from: str = Query(
@@ -78,9 +77,6 @@ async def show_convert(
     """
     # time = validate_date(time)
 
-    currency_from = await check_currencies(currency_from)
-    currency_to = await check_currencies(currency_to)
-
     params = {
         "to": currency_to.lower(),
         "from": currency_from.lower(),
@@ -99,6 +95,7 @@ async def show_convert(
 
 @router.get("/show_change")
 @check_time
+@check_currencies
 async def show_change(
     start_date: date = Query(
         default=date.today(),
@@ -114,4 +111,11 @@ async def show_change(
     ),
     source: str = "USD",
 ):
-    return start_date, end_date
+    params = {
+        "to": source.lower(),
+        "from": currency_from.lower(),
+        "amount": amount,
+        "date": str(time),
+    }
+
+    data = await http_client(url=settings.API.CONVERT, params=params)

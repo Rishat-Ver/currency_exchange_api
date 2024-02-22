@@ -42,19 +42,27 @@ async def fetch_currency_data():
         return cache
 
 
-async def check_currencies(string: str | None):
-    """Проверка валют на валидность."""
+def check_currencies(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        """Проверка валют на валидность."""
 
-    cache = await redis_tool.get_currency("currencies")
-    if string:
-        string = string.upper()
-        if string not in cache:
+        cache = await redis_tool.get_currency("currencies")
+        currencies = [
+            code.upper()
+            for arg in kwargs.values()
+            for code in (arg if isinstance(arg, list) else [arg])
+            if isinstance(code, str)
+        ]
+
+        if any(currency not in cache for currency in currencies):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Incorrect currency code!",
             )
+        return await func(*args, **kwargs)
 
-    return string
+    return wrapper
 
 
 def check_time(func):
