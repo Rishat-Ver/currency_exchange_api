@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -6,6 +7,7 @@ from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
 from app.services.httpclientsession import http_client
+from app.utils import redis_tool
 from app.utils.currencies import check_currencies, check_time
 from app.utils.users import get_current_user
 
@@ -109,6 +111,7 @@ async def show_change(
         default=None,
         description="Enter a list of comma-separated currency codes to limit output currencies",
     ),
+    user: User = Depends(get_current_user),
 ):
     param_currency = "%2C".join(currencies) if currencies else ""
     params = {
@@ -118,4 +121,67 @@ async def show_change(
         "currencies": param_currency,
     }
     data = await http_client(url=settings.API.CHANGE, params=params)
+    return data
+
+
+@router.get("/historical")
+@check_time
+@check_currencies
+async def show_historical(
+    historical_date: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
+    source: str = "USD",
+    currencies: list[str] = Query(
+        default=None,
+        description="Enter a list of comma-separated currency codes to limit output currencies",
+    ),
+    user: User = Depends(get_current_user),
+):
+    param_currency = "%2C".join(currencies) if currencies else ""
+    params = {
+        "date": str(historical_date),
+        "source": source,
+        "currencies": param_currency,
+    }
+    data = await http_client(url=settings.API.HISTORICAL, params=params)
+    return data
+
+
+@router.get("/list")
+async def show_list(
+    user: User = Depends(get_current_user),
+):
+    data = await redis_tool.get_currency("currencies")
+    return json.loads(data)
+
+
+@router.get("/timeframe")
+@check_time
+@check_currencies
+async def show_timeframe(
+    start_date: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
+    end_date: date = Query(
+        default=date.today(),
+        description="enter the date, no older than January 1, 1999",
+    ),
+    source: str = "USD",
+    currencies: list[str] = Query(
+        default=None,
+        description="Enter a list of comma-separated currency codes to limit output currencies",
+    ),
+    user: User = Depends(get_current_user),
+):
+    param_currency = "%2C".join(currencies) if currencies else ""
+    params = {
+        "start_date": str(start_date),
+        "end_date": str(end_date),
+        "currencies": param_currency,
+        "source": source,
+    }
+    data = await http_client(url=settings.API.TIMEFRAME, params=params)
     return data

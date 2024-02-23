@@ -4,7 +4,6 @@ from functools import wraps
 
 from fastapi import HTTPException, status
 
-from app.api.schemas import Currency
 from app.core.config import settings
 from app.services.httpclientsession import http_client
 from app.utils import redis_tool
@@ -13,7 +12,7 @@ from app.utils import redis_tool
 async def cache_currencies(currencies):
     """Сериализация списка валют для кеширования."""
 
-    currencies_data = json.dumps([currency.name for currency in currencies])
+    currencies_data = json.dumps(currencies)
     # Кешируем на 30 дней
     await redis_tool.set_currency("currencies", currencies_data, expiration=2592000)
 
@@ -24,7 +23,7 @@ async def get_cached_currencies():
     cached = await redis_tool.get_currency("currencies")
     if cached:
         names = json.loads(cached)
-        return [Currency(name=name) for name in names]
+        return [code for code in names]
     return None
 
 
@@ -34,10 +33,9 @@ async def fetch_currency_data():
     cached_currencies = await get_cached_currencies()
     if cached_currencies is not None:
         return cached_currencies
-
     data = await http_client(url=settings.API.LIST)
     if "currencies" in data:
-        cache = [Currency(name=name) for name in data["currencies"]]
+        cache = {code: country for code, country in data["currencies"].items()}
         await cache_currencies(cache)
         return cache
 
