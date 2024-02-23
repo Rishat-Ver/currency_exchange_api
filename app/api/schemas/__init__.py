@@ -4,9 +4,8 @@ __all__ = (
     "UserBase",
     "GetUsersSchema",
     "CreateUserSchema",
-    "Currency",
     "ResponseCurrency",
 )
 
-from .currency import Currency, ResponseCurrency
+from .currency import ResponseCurrency
 from .users import CreateUserSchema, DataToken, GetUsersSchema, Token, UserBase

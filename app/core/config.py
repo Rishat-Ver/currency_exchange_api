@@ -22,6 +22,8 @@ class CurrencySettings(BaseModel):
     EXCRATES: str
     CONVERT: str
     CHANGE: str
+    HISTORICAL: str
+    TIMEFRAME: str
 
 
 class Settings(BaseSettings):
