@@ -1,43 +1,9 @@
-import json
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from functools import wraps
 
 from fastapi import HTTPException, status
 
-from app.core.config import settings
-from app.services.httpclientsession import http_client
-from app.utils import redis_tool
-
-
-async def cache_currencies(currencies):
-    """Сериализация списка валют для кеширования."""
-
-    currencies_data = json.dumps(currencies)
-    # Кешируем на 30 дней
-    await redis_tool.set_currency("currencies", currencies_data, expiration=2592000)
-
-
-async def get_cached_currencies():
-    """Получение кешированных данных из Redis."""
-
-    cached = await redis_tool.get_currency("currencies")
-    if cached:
-        names = json.loads(cached)
-        return [code for code in names]
-    return None
-
-
-async def fetch_currency_data():
-    """Извлечение кодов валют."""
-
-    cached_currencies = await get_cached_currencies()
-    if cached_currencies is not None:
-        return cached_currencies
-    data = await http_client(url=settings.API.LIST)
-    if "currencies" in data:
-        cache = {code: country for code, country in data["currencies"].items()}
-        await cache_currencies(cache)
-        return cache
+from app.services import RedisClient
 
 
 def check_currencies(func):
@@ -45,7 +11,8 @@ def check_currencies(func):
     async def wrapper(*args, **kwargs):
         """Проверка валют на валидность."""
 
-        cache = await redis_tool.get_currency("currencies")
+        cache = await RedisClient.get_currency("currencies")
+
         currencies = [
             code.upper()
             for arg in kwargs.values()

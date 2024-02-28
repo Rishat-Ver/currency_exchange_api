@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
 from app.core.config import settings
+from app.services import RedisClient
 from app.services.httpclientsession import http_client
-from app.utils import redis_tool
+
 from app.utils.currencies import check_currencies, check_time
 from app.utils.users import get_current_user
 
@@ -153,7 +154,7 @@ async def show_historical(
 async def show_list(
     user: User = Depends(get_current_user),
 ):
-    data = await redis_tool.get_currency("currencies")
+    data = await RedisClient.get_currency("currencies")
     return json.loads(data)
 
 
