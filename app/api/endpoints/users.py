@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.models import User
 from app.api.schemas import CreateUserSchema
 from app.core.database import get_db_session
-from app.utils import redis_tool
-from app.utils.currencies import check_currencies
+from app.services import RedisClient
+
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -25,7 +25,11 @@ async def create_user(
     """
     Создание нового пользователя.
     """
-    valid_currency = await check_currencies(user.currency)
+    cache = await RedisClient.get_currency("currencies")
+    if user.currency not in cache:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency code!"
+        )
 
     hash_password = hash_pass(user.password)
     new_user = User(
@@ -33,7 +37,7 @@ async def create_user(
         password=hash_password,
         email=user.email,
         balance=user.balance,
-        currency=valid_currency,
+        currency=user.currency,
     )
     session.add(new_user)
     await session.commit()

@@ -8,12 +8,12 @@ from app.api import router
 from app.api.admin.model import UserModelView
 from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
-from app.utils.currencies import fetch_currency_data
+from app.services import RedisClient
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI, aioredis=None):
-    await fetch_currency_data()
+    await RedisClient.fetch_currency_data()
     yield
     if sessionmanager.engine is not None:
         await sessionmanager.close()
