@@ -1,4 +1,7 @@
-__all__ = ("Base", "User", "Currency")
+__all__ = (
+    "Base",
+    "User",
+)
 
 
-from .users import Base, Currency, User
+from .users import Base, User
