@@ -1,7 +1,8 @@
 __all__ = (
     "Base",
     "User",
+    "Balance",
 )
 
 
-from .users import Base, User
+from .users import Base, User, Balance

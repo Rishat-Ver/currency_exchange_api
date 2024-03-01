@@ -18,12 +18,11 @@ class UserModelView(ModelView, model=User):
         User.username,
         User.email,
         User.created_at,
-        User.balance,
-        User.currency,
+        User.balances,
         User.is_admin,
     ]
     column_sortable_list = [User.id]
-    column_searchable_list = [User.username, User.currency]
+    column_searchable_list = [User.username, User.email]
 
 
 class AdminAuth(AuthenticationBackend):
