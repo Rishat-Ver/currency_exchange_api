@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.models import User, Balance
-from app.api.schemas import CreateUserSchema, BalanceSchema
+from app.api.models import Balance, User
+from app.api.schemas import (BalanceSchema, CreateUserSchema,
+                             ResponseUserBalance)
 from app.core.database import get_db_session
 from app.services import RedisClient
-
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -44,24 +44,42 @@ async def get_me(user: User = Depends(get_current_user)):
     return user.username
 
 
-@router.patch("/top_up_balance/")
+@router.patch("/top_up_balance/", response_model=ResponseUserBalance)
 async def update_balance(
-        balance: list[BalanceSchema],
-        user: User = Depends(get_current_user),
-        session: AsyncSession = Depends(get_db_session),
+    balance: list[BalanceSchema],
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    cashe = await RedisClient.get_currency('currencies')
+    cache = await RedisClient.get_currency("currencies")
     for i in balance:
-        if i.currency not in cashe:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Incorrect currency')
+        if i.currency not in cache:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency"
+            )
 
     for balance_item in balance:
-        existing_balance = next((b for b in user.balances if b.currency == balance_item.currency), None)
+        existing_balance = next(
+            (b for b in user.balances if b.currency == balance_item.currency), None
+        )
         if existing_balance:
             existing_balance.amount += balance_item.amount
         else:
-            new_balance = Balance(amount=balance_item.amount, currency=balance_item.currency, user=user)
+            new_balance = Balance(
+                amount=balance_item.amount,
+                currency=balance_item.currency,
+                user_id=user.id,
+            )
             session.add(new_balance)
 
     await session.commit()
-    return user
+    await session.refresh(user)
+    response = ResponseUserBalance(
+        username=user.username,
+        email=user.email,
+        created_at=user.created_at,
+        balances=[
+            BalanceSchema(amount=balance.amount, currency=balance.currency)
+            for balance in user.balances
+        ],
+    )
+    return response

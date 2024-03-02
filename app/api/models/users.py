@@ -1,7 +1,8 @@
 from datetime import date
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (DeclarativeBase, Mapped, declared_attr,
+                            mapped_column, relationship)
 
 
 class Base(DeclarativeBase):
@@ -15,9 +16,9 @@ class Base(DeclarativeBase):
 
 
 class Balance(Base):
-    currency: Mapped[str] = mapped_column(default='RUB', server_default='RUB')
-    amount: Mapped[float] = mapped_column(default=0, server_default='0')
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    currency: Mapped[str] = mapped_column(default="RUB", server_default="RUB")
+    amount: Mapped[float] = mapped_column(default=0, server_default="0")
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user = relationship("User", back_populates="balances")
 
 
@@ -31,7 +32,6 @@ class User(Base):
         "Balance",
         collection_class=list,
         back_populates="user",
-        lazy='selectin',
-        cascade="all, delete, delete-orphan")
-
-
+        lazy="selectin",
+        cascade="all, delete, delete-orphan",
+    )

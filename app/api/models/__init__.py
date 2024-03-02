@@ -5,4 +5,4 @@ __all__ = (
 )
 
 
-from .users import Base, User, Balance
+from .users import Balance, Base, User

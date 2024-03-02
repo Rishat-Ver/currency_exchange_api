@@ -4,8 +4,10 @@ __all__ = (
     "UserBase",
     "CreateUserSchema",
     "ResponseCurrency",
-    "BalanceSchema"
+    "BalanceSchema",
+    "ResponseUserBalance",
 )
 
 from .currency import ResponseCurrency
-from .users import CreateUserSchema, DataToken, Token, UserBase, BalanceSchema
+from .users import (BalanceSchema, CreateUserSchema, DataToken,
+                    ResponseUserBalance, Token, UserBase)

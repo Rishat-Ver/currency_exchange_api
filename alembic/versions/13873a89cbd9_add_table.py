@@ -1,18 +1,18 @@
 """add_table
 
-Revision ID: 9f44e10a3ca6
+Revision ID: 13873a89cbd9
 Revises: 
-Create Date: 2024-03-02 15:48:06.147860
+Create Date: 2024-03-02 16:25:52.689678
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "9f44e10a3ca6"
+revision: str = "13873a89cbd9"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,9 +26,7 @@ def upgrade() -> None:
         sa.Column("password", sa.String(), nullable=False),
         sa.Column("email", sa.String(), nullable=False),
         sa.Column("created_at", sa.Date(), nullable=False),
-        sa.Column(
-            "is_admin", sa.Boolean(), server_default="False", nullable=False
-        ),
+        sa.Column("is_admin", sa.Boolean(), server_default="False", nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
@@ -36,9 +34,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "balances",
-        sa.Column(
-            "currency", sa.String(), server_default="RUB", nullable=False
-        ),
+        sa.Column("currency", sa.String(), server_default="RUB", nullable=False),
         sa.Column("amount", sa.Float(), server_default="0", nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),

@@ -4,7 +4,7 @@ from sqladmin.authentication import AuthenticationBackend
 from sqlalchemy import select
 from starlette.requests import Request
 
-from app.api.auth.security import verify_password, create_access_token
+from app.api.auth.security import create_access_token, verify_password
 from app.api.models import User
 from app.core import sessionmanager
 from app.core.config import settings
