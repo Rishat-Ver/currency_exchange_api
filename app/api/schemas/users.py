@@ -1,8 +1,7 @@
 import re
 from datetime import date
 
-from pydantic import (BaseModel, EmailStr, Field, NonNegativeFloat,
-                      field_validator)
+from pydantic import BaseModel, EmailStr, NonNegativeFloat, field_validator
 
 
 class Token(BaseModel):
@@ -20,13 +19,13 @@ class UserBase(BaseModel):
     created_at: date
 
 
+class BalanceSchema(BaseModel):
+    amount: NonNegativeFloat
+    currency: str
+
+
 class CreateUserSchema(UserBase):
     password: str
-    balance: NonNegativeFloat = 0
-    currency: str = Field(
-        default="RUB",
-        max_length=3,
-    )
 
     @field_validator("password")
     def check_password(cls, v):
@@ -45,6 +44,5 @@ class CreateUserSchema(UserBase):
         return v
 
 
-class GetUsersSchema(UserBase):
-    balance: NonNegativeFloat = 0
-    currency: str = "RUB"
+class ResponseUserBalance(UserBase):
+    balances: list[BalanceSchema]

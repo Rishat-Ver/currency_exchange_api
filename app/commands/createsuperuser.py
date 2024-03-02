@@ -32,7 +32,7 @@ async def create_superuser(username: str, password: str, email: str):
 
             session.add(superuser)
             await session.commit()
-        return True
+        print(f"Superuser create successfully")
 
 
 async def main():

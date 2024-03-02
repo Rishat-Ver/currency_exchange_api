@@ -8,7 +8,6 @@ from app.api.schemas import ResponseCurrency
 from app.core.config import settings
 from app.services import RedisClient
 from app.services.httpclientsession import http_client
-
 from app.utils.currencies import check_currencies, check_time
 from app.utils.users import get_current_user
 

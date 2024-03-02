@@ -1,8 +1,8 @@
 from datetime import date
-from enum import Enum as PyEnum
 
-
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import (DeclarativeBase, Mapped, declared_attr,
+                            mapped_column, relationship)
 
 
 class Base(DeclarativeBase):
@@ -15,11 +15,23 @@ class Base(DeclarativeBase):
     id: Mapped[int] = mapped_column(primary_key=True)
 
 
+class Balance(Base):
+    currency: Mapped[str] = mapped_column(default="RUB", server_default="RUB")
+    amount: Mapped[float] = mapped_column(default=0, server_default="0")
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user = relationship("User", back_populates="balances")
+
+
 class User(Base):
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(unique=True)
     created_at: Mapped[date] = mapped_column(default=date.today)
-    balance: Mapped[float] = mapped_column(server_default="0", default=0)
-    currency: Mapped[str] = mapped_column(server_default="RUB", default="RUB")
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="False")
+    balances = relationship(
+        "Balance",
+        collection_class=list,
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete, delete-orphan",
+    )

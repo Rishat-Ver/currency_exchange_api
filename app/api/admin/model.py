@@ -4,7 +4,7 @@ from sqladmin.authentication import AuthenticationBackend
 from sqlalchemy import select
 from starlette.requests import Request
 
-from app.api.auth.security import verify_password, create_access_token
+from app.api.auth.security import create_access_token, verify_password
 from app.api.models import User
 from app.core import sessionmanager
 from app.core.config import settings
@@ -18,12 +18,11 @@ class UserModelView(ModelView, model=User):
         User.username,
         User.email,
         User.created_at,
-        User.balance,
-        User.currency,
+        User.balances,
         User.is_admin,
     ]
     column_sortable_list = [User.id]
-    column_searchable_list = [User.username, User.currency]
+    column_searchable_list = [User.username, User.email]
 
 
 class AdminAuth(AuthenticationBackend):

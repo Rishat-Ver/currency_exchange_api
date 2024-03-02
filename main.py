@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 
 from app.api import router
-from app.api.admin.model import UserModelView, AdminAuth
+from app.api.admin.model import AdminAuth, UserModelView
 from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
 from app.core.config import settings
