@@ -24,13 +24,12 @@ class UserBase(BaseModel):
 
 
 class BalanceSchema(AsyncValidationModelMixin, BaseModel):
-    amount: NonNegativeFloat = 0
+    amount: NonNegativeFloat
     currency: str
 
 
 class CreateUserSchema(UserBase):
     password: str
-    balances: list[BalanceSchema]
 
     @field_validator("password")
     def check_password(cls, v):

@@ -15,8 +15,8 @@ class Base(DeclarativeBase):
 
 
 class Balance(Base):
-    currency: Mapped[str]
-    amount: Mapped[float]
+    currency: Mapped[str] = mapped_column(default='RUB', server_default='RUB')
+    amount: Mapped[float] = mapped_column(default=0, server_default='0')
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     user = relationship("User", back_populates="balances")
 
@@ -27,6 +27,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     created_at: Mapped[date] = mapped_column(default=date.today)
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="False")
-    balances = relationship("Balance", collection_class=list, back_populates="user", cascade="all, delete, delete-orphan")
+    balances = relationship(
+        "Balance",
+        collection_class=list,
+        back_populates="user",
+        lazy='selectin',
+        cascade="all, delete, delete-orphan")
 
 
