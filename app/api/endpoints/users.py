@@ -46,21 +46,30 @@ async def get_me(user: User = Depends(get_current_user)):
 
 @router.patch("/top_up_balance/")
 async def update_balance(
-        balance: list[BalanceSchema],
-        user: User = Depends(get_current_user),
-        session: AsyncSession = Depends(get_db_session),
+    balance: list[BalanceSchema],
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    cashe = await RedisClient.get_currency('currencies')
+    cashe = await RedisClient.get_currency("currencies")
     for i in balance:
         if i.currency not in cashe:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Incorrect currency')
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency"
+            )
 
     for balance_item in balance:
-        existing_balance = next((b for b in user.balances if b.currency == balance_item.currency), None)
+        existing_balance = next(
+            (b for b in user.balances if b.currency == balance_item.currency), None
+        )
         if existing_balance:
             existing_balance.amount += balance_item.amount
         else:
-            new_balance = Balance(amount=balance_item.amount, currency=balance_item.currency, user=user)
+            new_balance = Balance(
+                amount=balance_item.amount,
+                currency=balance_item.currency,
+                user_id=user.id,
+            )
+
             session.add(new_balance)
 
     await session.commit()

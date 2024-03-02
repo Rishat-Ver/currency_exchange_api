@@ -2,10 +2,7 @@ import re
 from datetime import date
 
 
-from pydantic import (BaseModel, EmailStr, NonNegativeFloat,
-                      field_validator)
-
-from pydantic_async_validation import AsyncValidationModelMixin
+from pydantic import BaseModel, EmailStr, NonNegativeFloat, field_validator
 
 
 class Token(BaseModel):
@@ -23,7 +20,7 @@ class UserBase(BaseModel):
     created_at: date
 
 
-class BalanceSchema(AsyncValidationModelMixin, BaseModel):
+class BalanceSchema(BaseModel):
     amount: NonNegativeFloat
     currency: str
 
