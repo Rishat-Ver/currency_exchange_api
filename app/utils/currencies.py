@@ -3,7 +3,9 @@ from functools import wraps
 
 from fastapi import HTTPException, status
 
+from app.core.config import settings
 from app.services import RedisClient
+from app.services.httpclientsession import http_client
 
 
 def check_currencies(func):
@@ -47,3 +49,26 @@ def check_time(func):
         return await func(*args, **kwargs)
 
     return wrapper
+
+
+async def get_exchange(
+    source: str,
+    currencies: list[str],
+):
+    """
+    Получает текущие обменные курсы для заданного списка валют относительно указанной базовой валюты.
+    """
+
+    if currencies is not None:
+        if len(currencies) == 1 and source == currencies[0]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid data: Currencies and source must be different",
+            )
+
+    param_currency = "%2C".join(currencies) if currencies else ""
+    params = {"source": source, "currencies": param_currency}
+
+    data = await http_client(url=settings.API.EXCRATES, params=params)
+
+    return data

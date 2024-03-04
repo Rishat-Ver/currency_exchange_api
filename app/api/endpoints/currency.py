@@ -8,7 +8,7 @@ from app.api.schemas import ResponseCurrency
 from app.core.config import settings
 from app.services import RedisClient
 from app.services.httpclientsession import http_client
-from app.utils.currencies import check_currencies, check_time
+from app.utils.currencies import check_currencies, check_time, get_exchange
 from app.utils.users import get_current_user
 
 router = APIRouter(prefix="/currency", tags=["Currency"])
@@ -22,21 +22,17 @@ async def get_exchange_rates(
     user: User = Depends(get_current_user),
 ):
     """
-    Получение обменных курсов валют.
-    Права доступа — авторизованный пользователь.
+    Получает текущие обменные курсы для заданного списка валют относительно указанной базовой валюты.
+    Доступен только для авторизованных пользователей.
+
+    Параметры:
+    - source: базовая валюта для которой будут получены курсы обмена (по умолчанию "USD").
+    - currencies: список целевых валют, для которых необходимо получить курсы обмена.
+
+    Возвращает данные об обменных курсах, включая временную метку обновления данных, базовую валюту и курсы обмена для всех запрошенных валют.
     """
 
-    if currencies is not None:
-        if len(currencies) == 1 and source == currencies[0]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid data: Currencies and source must be different",
-            )
-
-    param_currency = "%2C".join(currencies) if currencies else ""
-    params = {"source": source, "currencies": param_currency}
-
-    data = await http_client(url=settings.API.EXCRATES, params=params)
+    data = await get_exchange(source=source, currencies=currencies)
     response_data = ResponseCurrency(
         time=datetime.utcfromtimestamp(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S"),
         source=data["source"],
@@ -76,7 +72,6 @@ async def show_convert(
     Проверяет валидность входных валют и даты, затем запрашивает курс конвертации через внешний API и возвращает
     результат конвертации.
     """
-    # time = validate_date(time)
 
     params = {
         "to": currency_to.lower(),
@@ -113,6 +108,19 @@ async def show_change(
     ),
     user: User = Depends(get_current_user),
 ):
+    """
+    Отображает изменение курса валют за указанный период времени между двумя датами для авторизованных пользователей.
+    Позволяет пользователю увидеть, как валютный курс менялся в течение времени.
+
+    Параметры:
+    - start_date: начальная дата периода (не ранее 1 января 1999 года).
+    - end_date: конечная дата периода (не ранее 1 января 1999 года).
+    - source: базовая валюта (по умолчанию "USD").
+    - currencies: список валют, для которых необходимо получить данные об изменении курса.
+
+    Возвращает данные об изменении курсов валют за указанный период, включая начальную и конечную дату периода.
+    """
+
     param_currency = "%2C".join(currencies) if currencies else ""
     params = {
         "start_date": str(start_date),
@@ -139,6 +147,18 @@ async def show_historical(
     ),
     user: User = Depends(get_current_user),
 ):
+    """
+    Предоставляет исторические курсы валют для указанной даты для авторизованных пользователей.
+    Пользователь может запросить курсы обмена на конкретную прошедшую дату для одной или нескольких валют относительно базовой валюты.
+
+    Параметры:
+    - historical_date: дата, на которую требуется получить исторические курсы (не ранее 1 января 1999 года).
+    - source: базовая валюта (по умолчанию "USD").
+    - currencies: список валют, для которых необходимо получить исторические курсы.
+
+    Возвращает исторические курсы валют на указанную дату, включая базовую валюту и курсы для всех запрошенных валют.
+    """
+
     param_currency = "%2C".join(currencies) if currencies else ""
     params = {
         "date": str(historical_date),
@@ -153,6 +173,14 @@ async def show_historical(
 async def show_list(
     user: User = Depends(get_current_user),
 ):
+    """
+    Возвращает список доступных валют и соответствующих стран для авторизованных пользователей.
+    Помогает пользователю узнать, какие валюты доступны для операций в системе.
+
+    Не требует параметров.
+
+    Возвращает список валют в формате код валюты: страна. Этот список может использоваться для выбора валют при выполнении других запросов.
+    """
     data = await RedisClient.get_currency("currencies")
     return json.loads(data)
 
@@ -176,6 +204,19 @@ async def show_timeframe(
     ),
     user: User = Depends(get_current_user),
 ):
+    """
+    Запрашивает курсы валют за определенный период времени для авторизованных пользователей.
+    Позволяет пользователю получить информацию о курсах валют на каждую дату в указанном временном промежутке.
+
+    Параметры:
+    - start_date: начальная дата периода (не ранее 1 января 1999 года).
+    - end_date: конечная дата периода (не ранее 1 января 1999 года).
+    - source: базовая валюта (по умолчанию "USD").
+    - currencies: список валют, курсы которых требуется получить за период.
+
+    Возвращает данные о курсах валют за каждый день в указанном периоде, позволяя пользователю анализировать динамику изменения курсов.
+    """
+
     param_currency = "%2C".join(currencies) if currencies else ""
     params = {
         "start_date": str(start_date),
