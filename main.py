@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 
 from app.api import router
-from app.api.admin.model import AdminAuth, UserModelView
+from app.api.admin.model import AdminAuth, UserModelView, BalanceModelView
 from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
 from app.core.config import settings
@@ -29,6 +29,7 @@ admin = Admin(
     authentication_backend=AdminAuth(settings.AUTH.KEY),
 )
 admin.add_view(UserModelView)
+admin.add_view(BalanceModelView)
 app.include_router(admin_router)
 # add_pagination(app)
 
