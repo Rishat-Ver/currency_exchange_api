@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth.security import verify_access_token
 from app.api.models import User
+from app.api.schemas import ResponseUserBalance, BalanceSchema
 from app.core.database import get_db_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login/")
@@ -27,3 +28,21 @@ async def get_current_user(
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
     return user
+
+
+async def create_response_user_balance(user: User) -> ResponseUserBalance:
+    """
+    Создает и возвращает объект ResponseUserBalance для заданного пользователя.
+
+    :param user: Экземпляр пользователя, для которого необходимо создать ответ.
+    :return: Экземпляр ResponseUserBalance с данными пользователя и его балансами.
+    """
+    return ResponseUserBalance(
+        username=user.username,
+        email=user.email,
+        created_at=user.created_at,
+        balances=[
+            BalanceSchema(amount=balance.amount, currency=balance.currency)
+            for balance in user.balances
+        ],
+    )

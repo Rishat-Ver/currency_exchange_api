@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from passlib.context import CryptContext
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.api.models import Balance, User
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+from app.api.models import User
 from app.api.schemas import BalanceSchema, CreateUserSchema, ResponseUserBalance
 from app.core.database import get_db_session
 from app.services import RedisClient
+from app.utils.balances import find_or_create_balance
 from app.utils.currencies import check_currencies, get_exchange
-from app.utils.users import get_current_user
+from app.utils.users import get_current_user, create_response_user_balance
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -39,11 +40,12 @@ async def create_user(
     return new_user
 
 
-@router.get("/me")
+@router.get("/me", response_model=ResponseUserBalance)
 async def get_me(user: User = Depends(get_current_user)):
     """Получение текущего юзера."""
 
-    return user.username
+    response = await create_response_user_balance(user)
+    return response
 
 
 @router.patch("/top_up_balance/", response_model=ResponseUserBalance)
@@ -70,86 +72,59 @@ async def update_balance(
         if existing_balance:
             existing_balance.amount += balance_item.amount
         else:
-            new_balance = Balance(
-                amount=balance_item.amount,
-                currency=balance_item.currency,
+            await find_or_create_balance(
+                session=session,
                 user_id=user.id,
+                currency=balance_item.currency,
+                amount=balance_item.amount,
             )
-            session.add(new_balance)
 
     await session.commit()
     await session.refresh(user)
-    response = ResponseUserBalance(
-        username=user.username,
-        email=user.email,
-        created_at=user.created_at,
-        balances=[
-            BalanceSchema(amount=balance.amount, currency=balance.currency)
-            for balance in user.balances
-        ],
-    )
+    response = await create_response_user_balance(user)
     return response
 
 
-@router.patch("/change_currency/")
+@router.patch("/change_currency/", response_model=ResponseUserBalance)
 @check_currencies
 async def convert_user_currency(
-    source: str,
-    currency: str,
-    amount: float,
+    source: str = Query(
+        description="Currency you are converting from",
+        example="USD",
+        min_length=3,
+        max_length=3,
+    ),
+    currency: str = Query(
+        description="Currency you are converting to",
+        example="EUR",
+        min_length=3,
+        max_length=3,
+    ),
+    amount: float = Query(description="The amount to be converted.", gt=0),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-    stmt = await session.execute(
-        select(User).options(joinedload(User.balances)).where(User.id == user.id)
-    )
-    res = stmt.scalars().unique().one()
-
-    has_source_currency = [balance.currency for balance in res.balances]
-    if source not in has_source_currency:
+    source_balance = next((b for b in user.balances if b.currency == source), None)
+    if not source_balance:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You don`t have this currency",
+            status.HTTP_400_BAD_REQUEST, detail="You don't have this currency"
         )
 
-    has_amount_currency = next(
-        (balance.amount for balance in res.balances if balance.currency == source)
-    )
+    if source_balance.amount < amount:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Insufficient funds")
 
-    if has_amount_currency < amount:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You don`t have enough money on your balance",
-        )
     exchange = await get_exchange(source=source, currencies=[currency])
-    for balance in res.balances:  # type: Balance
-        if balance.currency == source:
-            if currency not in has_source_currency:
-                new_balance = Balance(
-                    amount=exchange["quotes"][f"{source}{currency}"] * amount,
-                    currency=currency,
-                    user_id=user.id,
-                )
-                session.add(new_balance)
-                balance.amount -= amount
-            else:
-                change_balance = await session.execute(
-                    select(Balance)
-                    .options(joinedload(Balance.user))
-                    .where(Balance.currency == currency, Balance.user_id == user.id)
-                )
-                res = change_balance.scalar_one_or_none()
-                balance.amount -= amount
-                res.amount += exchange["quotes"][f"{source}{currency}"] * amount
-        if balance.amount == 0:
-            await session.delete(balance)
+    exchange_rate = exchange["quotes"][f"{source}{currency}"]
+
+    target_balance = await find_or_create_balance(session, user.id, currency)
+    source_balance.amount -= amount
+    target_balance.amount += amount * exchange_rate
+
+    if source_balance.amount == 0:
+        await session.delete(source_balance)
 
     await session.commit()
     await session.refresh(user)
-    return "успех"
-    # {
-    #     "success": True,
-    #     "timestamp": 1709582583,
-    #     "source": "RUB",
-    #     "quotes": {"RUBEUR": 0.010051},
-    # }
+
+    response = await create_response_user_balance(user)
+    return response
