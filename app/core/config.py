@@ -26,10 +26,16 @@ class CurrencySettings(BaseModel):
     TIMEFRAME: str
 
 
+class EmailSettings(BaseModel):
+    NAME: str
+    PASS: str
+
+
 class Settings(BaseSettings):
     DB: PostgresqlSettings
     AUTH: AuthSettings
     API: CurrencySettings
+    EMAIL: EmailSettings
 
     model_config = SettingsConfigDict(
         env_file=dotenv.find_dotenv(".env"),

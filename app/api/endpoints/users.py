@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from passlib.context import CryptContext
 from sqlalchemy import select
 
@@ -11,6 +11,7 @@ from app.core.database import get_db_session
 from app.services import RedisClient
 from app.utils.balances import find_or_create_balance
 from app.utils.currencies import check_currencies, get_exchange
+from app.utils.send_email import send_email_async
 from app.utils.users import get_current_user, create_response_user_balance
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -51,7 +52,8 @@ async def get_me(user: User = Depends(get_current_user)):
 
 @router.patch("/top_up_balance/", response_model=ResponseUserBalance)
 async def update_balance(
-    balance: list[BalanceSchema],
+    balance: BalanceSchema,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -60,28 +62,33 @@ async def update_balance(
     """
 
     cache = await RedisClient.get_currency("currencies")
-    for i in balance:
-        if i.currency not in cache:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency"
-            )
 
-    for balance_item in balance:
-        existing_balance = next(
-            (b for b in user.balances if b.currency == balance_item.currency), None
+    if balance.currency not in cache:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency"
         )
-        if existing_balance:
-            existing_balance.amount += balance_item.amount
-        else:
-            await find_or_create_balance(
-                session=session,
-                user_id=user.id,
-                currency=balance_item.currency,
-                amount=balance_item.amount,
-            )
+
+    existing_balance = next(
+        (b for b in user.balances if b.currency == balance.currency), None
+    )
+    if existing_balance:
+        existing_balance.amount += balance.amount
+    else:
+        await find_or_create_balance(
+            session=session,
+            user_id=user.id,
+            currency=balance.currency,
+            amount=balance.amount,
+        )
 
     await session.commit()
     await session.refresh(user)
+    background_tasks.add_task(
+        send_email_async,
+        f"adding funds to your account",
+        f"Your balance has been successfully replenished with {balance.amount} {balance.currency}",
+        user.email,
+    )
     response = await create_response_user_balance(user)
     return response
 
@@ -89,6 +96,7 @@ async def update_balance(
 @router.patch("/change_currency/", response_model=ResponseUserBalance)
 @check_currencies
 async def convert_user_currency(
+    background_tasks: BackgroundTasks,
     source: str = Query(
         description="Currency you are converting from",
         example="USD",
@@ -105,6 +113,17 @@ async def convert_user_currency(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
+
+    """
+    Конвертирует одну валюту пользователя в другую и отправляет уведомление на почту.
+
+    Параметры:
+    - source - валюта, из которой происходит конвертация,
+    - currency - валюта, в которую происходит конвертация,
+    - amount - количество конвертируемой валюты,
+
+    Возвращает: Пользователя с новым балансом.
+    """
     source_balance = next((b for b in user.balances if b.currency == source), None)
     if not source_balance:
         raise HTTPException(
@@ -119,13 +138,20 @@ async def convert_user_currency(
 
     target_balance = await find_or_create_balance(session, user.id, currency)
     source_balance.amount -= amount
-    target_balance.amount += amount * exchange_rate
+    add_amount = round(amount * exchange_rate, 2)
+    target_balance.amount += add_amount
 
     if source_balance.amount == 0:
         await session.delete(source_balance)
 
     await session.commit()
     await session.refresh(user)
+    background_tasks.add_task(
+        send_email_async,
+        f"Convert currency",
+        f"you exchanged {amount} {source} for {add_amount} {currency}",
+        user.email,
+    )
 
     response = await create_response_user_balance(user)
     return response
@@ -133,6 +159,7 @@ async def convert_user_currency(
 
 @router.delete("/me/delete")
 async def user_delete(
+    background_tasks: BackgroundTasks,
     user=Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -140,3 +167,44 @@ async def user_delete(
 
     await session.delete(user)
     await session.commit()
+    background_tasks.add_task(
+        send_email_async,
+        f"delete account",
+        f"your account successfully delete",
+        user.email,
+    )
+
+
+@router.get("/evaluate_balance")
+@check_currencies
+async def evaluate_balance_to_only_currency(
+    source: str = Query(
+        description="Currency you are converting to",
+        example="EUR",
+        min_length=3,
+        max_length=3,
+    ),
+    user: User = Depends(get_current_user),
+):
+    """
+    Показывает капитал пользователя в валюте source.
+
+    Параметр: source - валюта, в которой будет отражен капитал.
+
+    Возвращает: баланс в валюте source.
+    """
+
+    user_currencies = [i.currency for i in user.balances]
+    exchange = await get_exchange(source=source, currencies=user_currencies)
+
+    rates_user_currencies = {
+        f"{code[3:]}": rate for code, rate in exchange["quotes"].items()
+    }
+
+    result = sum(
+        balance.amount / rates_user_currencies.get(balance.currency, 1)
+        for balance in user.balances
+        if balance.currency in rates_user_currencies or balance.currency == source.upper()
+    )
+
+    return f"Your capital in {source} is {round(result, 2)} {source}"
