@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from passlib.context import CryptContext
+from sqlalchemy import select
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -128,3 +129,14 @@ async def convert_user_currency(
 
     response = await create_response_user_balance(user)
     return response
+
+
+@router.delete("/me/delete")
+async def user_delete(
+    user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Удаление юзера."""
+
+    await session.delete(user)
+    await session.commit()
