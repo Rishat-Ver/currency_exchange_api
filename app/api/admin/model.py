@@ -5,7 +5,7 @@ from sqlalchemy import select
 from starlette.requests import Request
 
 from app.api.auth.security import create_access_token, verify_password
-from app.api.models import User, Balance
+from app.api.models import Balance, User
 from app.core import sessionmanager
 from app.core.config import settings
 
