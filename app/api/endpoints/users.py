@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.websockets import WebSocket
 from passlib.context import CryptContext
-from sqlalchemy import select
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
 
 from app.api.models import User
 from app.api.schemas import BalanceSchema, CreateUserSchema, ResponseUserBalance
 from app.core.database import get_db_session
 from app.services import RedisClient
+from app.services.websocket_manager import websocket_, ws_manager
 from app.utils.balances import find_or_create_balance
 from app.utils.currencies import check_currencies, get_exchange
 from app.utils.send_email import send_email_async
-from app.utils.users import get_current_user, create_response_user_balance
+from app.utils.users import create_response_user_balance, get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -21,6 +20,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_pass(password: str):
     return pwd_context.hash(password)
+
+
+@router.websocket("/ws/")
+async def websocket_endpoint_users(
+    websocket: WebSocket, session=Depends(get_db_session)
+):
+    await websocket_(websocket, session)
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED)
@@ -89,6 +95,10 @@ async def update_balance(
         f"Your balance has been successfully replenished with {balance.amount} {balance.currency}",
         user.email,
     )
+    await ws_manager.send_to_user(
+        user.id,
+        message=f"Your balance has been successfully replenished with {balance.amount} {balance.currency}",
+    )
     response = await create_response_user_balance(user)
     return response
 
@@ -113,7 +123,6 @@ async def convert_user_currency(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-
     """
     Конвертирует одну валюту пользователя в другую и отправляет уведомление на почту.
 
@@ -152,7 +161,10 @@ async def convert_user_currency(
         f"you exchanged {amount} {source} for {add_amount} {currency}",
         user.email,
     )
-
+    await ws_manager.send_to_user(
+        user.id,
+        message=f"you exchanged {amount} {source} for {add_amount} {currency}",
+    )
     response = await create_response_user_balance(user)
     return response
 
@@ -204,7 +216,8 @@ async def evaluate_balance_to_only_currency(
     result = sum(
         balance.amount / rates_user_currencies.get(balance.currency, 1)
         for balance in user.balances
-        if balance.currency in rates_user_currencies or balance.currency == source.upper()
+        if balance.currency in rates_user_currencies
+        or balance.currency == source.upper()
     )
 
     return f"Your capital in {source} is {round(result, 2)} {source}"

@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -22,7 +22,9 @@ class Base(DeclarativeBase):
 
 class Balance(Base):
     currency: Mapped[str] = mapped_column(default="RUB", server_default="RUB")
-    amount: Mapped[float] = mapped_column(default=0, server_default="0")
+    amount: Mapped[Numeric] = mapped_column(
+        Numeric(precision=10, scale=2), default=0, server_default="0"
+    )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user = relationship("User", back_populates="balances")
 
