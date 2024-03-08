@@ -1,3 +1,5 @@
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.websockets import WebSocket
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +10,7 @@ from app.api.schemas import (BalanceSchema, CreateUserSchema,
 from app.core.database import get_db_session
 from app.exceptions import BadRequestException
 from app.services import RedisClient
+from app.services.websocket_manager import websocket_, ws_manager
 from app.utils.balances import find_or_create_balance
 from app.utils.currencies import check_currencies, get_exchange
 from app.utils.send_email import send_email_async
@@ -20,6 +23,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_pass(password: str):
     return pwd_context.hash(password)
+
+
+@router.websocket("/ws/")
+async def websocket_endpoint_users(
+    websocket: WebSocket, session=Depends(get_db_session)
+):
+    await websocket_(websocket, session)
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED)
@@ -86,6 +96,10 @@ async def update_balance(
         f"Your balance has been successfully replenished with {balance.amount} {balance.currency}",
         user.email,
     )
+    await ws_manager.send_to_user(
+        user.id,
+        message=f"Your balance has been successfully replenished with {balance.amount} {balance.currency}",
+    )
     response = await create_response_user_balance(user)
     return response
 
@@ -148,7 +162,10 @@ async def convert_user_currency(
         f"you exchanged {amount} {source} for {add_amount} {currency}",
         user.email,
     )
-
+    await ws_manager.send_to_user(
+        user.id,
+        message=f"you exchanged {amount} {source} for {add_amount} {currency}",
+    )
     response = await create_response_user_balance(user)
     return response
 

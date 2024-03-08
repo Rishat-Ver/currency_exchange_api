@@ -35,7 +35,12 @@ def upgrade() -> None:
     op.create_table(
         "balances",
         sa.Column("currency", sa.String(), server_default="RUB", nullable=False),
-        sa.Column("amount", sa.Float(), server_default="0", nullable=False),
+        sa.Column(
+            "amount",
+            sa.Numeric(precision=10, scale=2),
+            server_default="0",
+            nullable=False,
+        ),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(

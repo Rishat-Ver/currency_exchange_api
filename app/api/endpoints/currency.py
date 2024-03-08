@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
