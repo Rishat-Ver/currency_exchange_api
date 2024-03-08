@@ -22,8 +22,8 @@ fastapi-cache2 = {extras = ["redis"], version = "^0.2.1"}
 sqladmin = "^0.16.0"
 itsdangerous = "^2.1.2"
 bcrypt = "4.0.1"
-pydantic-async-validation = "^0.1.2"
 aiosmtplib = "^3.0.1"
+googletrans = "4.0.0-rc1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"

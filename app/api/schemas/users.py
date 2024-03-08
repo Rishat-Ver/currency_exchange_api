@@ -1,7 +1,8 @@
 import re
 from datetime import date
+from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr, NonNegativeFloat, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, condecimal
 
 
 class Token(BaseModel):
@@ -20,7 +21,7 @@ class UserBase(BaseModel):
 
 
 class BalanceSchema(BaseModel):
-    amount: NonNegativeFloat
+    amount: Decimal = condecimal(gt=Decimal(0))
     currency: str
 
 

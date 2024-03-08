@@ -4,6 +4,7 @@ from functools import wraps
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+from app.exceptions import BadRequestException
 from app.services import RedisClient
 from app.services.httpclientsession import http_client
 
@@ -23,10 +24,8 @@ def check_currencies(func):
         ]
 
         if any(currency not in cache for currency in currencies):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incorrect currency code!",
-            )
+            raise BadRequestException(detail="Incorrect currency code!")
+
         return await func(*args, **kwargs)
 
     return wrapper
@@ -40,11 +39,9 @@ def check_time(func):
         time_lst = [kw for kw in kwargs.values() if isinstance(kw, date)]
         for t in time_lst:
             time = t
+
             if time < min_date or time > max_date:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Incorrect date",
-                )
+                raise BadRequestException(detail="Incorrect date")
 
         return await func(*args, **kwargs)
 
@@ -61,9 +58,8 @@ async def get_exchange(
 
     if currencies is not None:
         if len(currencies) == 1 and source == currencies[0]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid data: Currencies and source must be different",
+            raise BadRequestException(
+                detail=f"Invalid data: Currencies and source must be different"
             )
 
     param_currency = "%2C".join(currencies) if currencies else ""

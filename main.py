@@ -9,6 +9,9 @@ from app.api.admin.model import AdminAuth, BalanceModelView, UserModelView
 from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
 from app.core.config import settings
+from app.exceptions import (BadRequestException, CustomException,
+                            custom_exception_handler,
+                            request_exception_handler)
 from app.services import RedisClient
 
 
@@ -22,6 +25,9 @@ async def lifespan(app: FastAPI, aioredis=None):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
+
+app.add_exception_handler(BadRequestException, request_exception_handler)
+app.add_exception_handler(CustomException, custom_exception_handler)
 
 admin = Admin(
     app=app,
