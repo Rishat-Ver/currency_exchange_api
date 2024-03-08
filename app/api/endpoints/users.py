@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from passlib.context import CryptContext
-from sqlalchemy import select
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from app.api.models import User
-from app.api.schemas import BalanceSchema, CreateUserSchema, ResponseUserBalance
+from app.api.schemas import (BalanceSchema, CreateUserSchema,
+                             ResponseUserBalance)
 from app.core.database import get_db_session
+from app.exceptions import BadRequestException
 from app.services import RedisClient
 from app.utils.balances import find_or_create_balance
 from app.utils.currencies import check_currencies, get_exchange
 from app.utils.send_email import send_email_async
-from app.utils.users import get_current_user, create_response_user_balance
+from app.utils.users import create_response_user_balance, get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -64,9 +63,7 @@ async def update_balance(
     cache = await RedisClient.get_currency("currencies")
 
     if balance.currency not in cache:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect currency"
-        )
+        raise BadRequestException(detail="Incorrect currency")
 
     existing_balance = next(
         (b for b in user.balances if b.currency == balance.currency), None
@@ -96,6 +93,7 @@ async def update_balance(
 @router.patch("/change_currency/", response_model=ResponseUserBalance)
 @check_currencies
 async def convert_user_currency(
+    request: Request,
     background_tasks: BackgroundTasks,
     source: str = Query(
         description="Currency you are converting from",
@@ -113,7 +111,7 @@ async def convert_user_currency(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-
+    # print(request.headers.get("Accept-Language")[:2])
     """
     Конвертирует одну валюту пользователя в другую и отправляет уведомление на почту.
 
@@ -126,12 +124,10 @@ async def convert_user_currency(
     """
     source_balance = next((b for b in user.balances if b.currency == source), None)
     if not source_balance:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, detail="You don't have this currency"
-        )
+        raise BadRequestException(detail="You don't have this currency")
 
     if source_balance.amount < amount:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Insufficient funds")
+        raise BadRequestException(detail="Insufficient funds")
 
     exchange = await get_exchange(source=source, currencies=[currency])
     exchange_rate = exchange["quotes"][f"{source}{currency}"]
@@ -204,7 +200,8 @@ async def evaluate_balance_to_only_currency(
     result = sum(
         balance.amount / rates_user_currencies.get(balance.currency, 1)
         for balance in user.balances
-        if balance.currency in rates_user_currencies or balance.currency == source.upper()
+        if balance.currency in rates_user_currencies
+        or balance.currency == source.upper()
     )
 
     return f"Your capital in {source} is {round(result, 2)} {source}"

@@ -12,7 +12,7 @@ pydantic-settings = "^2.1.0"
 pydantic = {extras = ["email"], version = "^2.6.1"}
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
 asyncpg = "^0.29.0"
-uvicorn = {version = "^0.27.0.post1", extras = ["standart"]}
+uvicorn = {extras = ["standard"], version = "^0.27.1"}
 alembic = "^1.13.1"
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
 passlib = "^1.7.4"
@@ -22,8 +22,8 @@ fastapi-cache2 = {extras = ["redis"], version = "^0.2.1"}
 sqladmin = "^0.16.0"
 itsdangerous = "^2.1.2"
 bcrypt = "4.0.1"
-pydantic-async-validation = "^0.1.2"
 aiosmtplib = "^3.0.1"
+googletrans = "4.0.0-rc1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
