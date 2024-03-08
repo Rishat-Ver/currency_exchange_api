@@ -2,7 +2,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from googletrans import Translator
 
-from app.exceptions import BadRequestException, CustomException, ErrorResponse
+from .models import ErrorResponse
+from .exceptions import BadRequestException, CustomException
 
 translator = Translator()
 
