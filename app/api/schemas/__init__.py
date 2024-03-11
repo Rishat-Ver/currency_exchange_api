@@ -9,5 +9,11 @@ __all__ = (
 )
 
 from .currency import ResponseCurrency
-from .users import (BalanceSchema, CreateUserSchema, DataToken,
-                    ResponseUserBalance, Token, UserBase)
+from .users import (
+    BalanceSchema,
+    CreateUserSchema,
+    DataToken,
+    ResponseUserBalance,
+    Token,
+    UserBase,
+)

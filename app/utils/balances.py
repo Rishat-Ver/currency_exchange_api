@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -5,7 +7,7 @@ from app.api.models import Balance
 
 
 async def find_or_create_balance(
-    session: AsyncSession, user_id: int, currency: str, amount: float = 0
+    session: AsyncSession, user_id: int, currency: str, amount: Decimal = 0
 ) -> Balance:
     """Поиск существующего баланса или создание нового."""
 

@@ -2,7 +2,7 @@ import re
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr, field_validator, condecimal
+from pydantic import BaseModel, EmailStr, condecimal, field_validator
 
 
 class Token(BaseModel):
