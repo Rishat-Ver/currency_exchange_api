@@ -2,13 +2,12 @@ from decimal import Decimal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.websockets import WebSocket
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
+from fastapi_limiter.depends import RateLimiter
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.models import User
-from app.api.schemas import (BalanceSchema, CreateUserSchema,
-                             ResponseUserBalance)
+from app.api.schemas import BalanceSchema, CreateUserSchema, ResponseUserBalance
 from app.core.database import get_db_session
 from app.exceptions import BadRequestException
 from app.services import RedisClient
@@ -188,7 +187,9 @@ async def user_delete(
     )
 
 
-@router.get("/evaluate_balance")
+@router.get(
+    "/evaluate_balance", dependencies=[Depends(RateLimiter(times=1, seconds=5))]
+)
 @check_currencies
 async def evaluate_balance_to_only_currency(
     source: str = Query(
