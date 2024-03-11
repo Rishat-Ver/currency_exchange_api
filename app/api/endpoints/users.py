@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.websockets import WebSocket
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
@@ -107,7 +109,6 @@ async def update_balance(
 @router.patch("/change_currency/", response_model=ResponseUserBalance)
 @check_currencies
 async def convert_user_currency(
-    request: Request,
     background_tasks: BackgroundTasks,
     source: str = Query(
         description="Currency you are converting from",
@@ -121,11 +122,10 @@ async def convert_user_currency(
         min_length=3,
         max_length=3,
     ),
-    amount: float = Query(description="The amount to be converted.", gt=0),
+    amount: Decimal = Query(description="The amount to be converted.", gt=0),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-    # print(request.headers.get("Accept-Language")[:2])
     """
     Конвертирует одну валюту пользователя в другую и отправляет уведомление на почту.
 
