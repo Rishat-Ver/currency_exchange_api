@@ -1,5 +1,8 @@
 import json
 
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_limiter import FastAPILimiter
 from redis import asyncio as aioredis
 
 from app.core.config import settings
@@ -10,6 +13,16 @@ class RedisClient:
     __redis_connect = aioredis.from_url(
         "redis://localhost:6379", encoding="utf8", decode_responses=True
     )
+
+    @classmethod
+    async def fastapi_cache_init(cls):
+        return FastAPICache.init(
+            RedisBackend(cls.__redis_connect), prefix="fastapi-cache"
+        )
+
+    @classmethod
+    async def fastapi_limiter_init(cls):
+        return await FastAPILimiter.init(cls.__redis_connect)
 
     @classmethod
     async def set_currency(cls, key, value, expiration=None):

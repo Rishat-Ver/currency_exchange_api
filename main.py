@@ -9,14 +9,19 @@ from app.api.admin.model import AdminAuth, BalanceModelView, UserModelView
 from app.api.admin.model import router as admin_router
 from app.core import sessionmanager
 from app.core.config import settings
-from app.exceptions import (BadRequestException, CustomException,
-                            custom_exception_handler,
-                            request_exception_handler)
+from app.exceptions import (
+    BadRequestException,
+    CustomException,
+    custom_exception_handler,
+    request_exception_handler,
+)
 from app.services import RedisClient
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI, aioredis=None):
+async def lifespan(app: FastAPI):
+    await RedisClient.fastapi_cache_init()
+    await RedisClient.fastapi_limiter_init()
     await RedisClient.fetch_currency_data()
     yield
     if sessionmanager.engine is not None:
