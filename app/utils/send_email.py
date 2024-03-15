@@ -6,6 +6,29 @@ from app.core.config import settings
 
 
 async def send_email_async(subject: str, body: str, to_email: str):
+    """
+    Асинхронная отправка электронного письма.
+
+    Функция асинхронно отправляет электронное письмо с использованием SMTP сервера.
+    Поддерживает TLS для безопасной передачи данных. Для отправки используются настройки,
+    указанные в конфигурации приложения (settings).
+
+    Args:
+        subject (str): Тема электронного письма.
+        body (str): Текстовое содержание письма.
+        to_email (str): Адрес электронной почты получателя.
+
+    Пример использования:
+        await send_email_async(
+            subject="Привет от FastAPI",
+            body="Тестовое сообщение от вашего FastAPI приложения.",
+            to_email="recipient@example.com"
+        )
+
+    Важно: Для функционирования необходимо иметь доступ к SMTP-серверу и корректно настроенные
+    параметры в settings.EMAIL, включая имя пользователя и пароль.
+    """
+
     message = EmailMessage()
     message["From"] = "alberv0r@yandex.ru"
     message["To"] = to_email
