@@ -20,6 +20,7 @@ class UserModelView(ModelView, model=User):
         User.created_at,
         User.balances,
         User.is_admin,
+        User.image_path,
     ]
     column_sortable_list = [User.id]
     column_searchable_list = [User.username, User.email]

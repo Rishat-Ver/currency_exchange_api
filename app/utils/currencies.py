@@ -1,8 +1,6 @@
 from datetime import date, timedelta
 from functools import wraps
 
-from fastapi import HTTPException, status
-
 from app.core.config import settings
 from app.exceptions import BadRequestException
 from app.services import RedisClient
@@ -10,9 +8,21 @@ from app.services.httpclientsession import http_client
 
 
 def check_currencies(func):
+    """
+    Декоратор для проверки валидности валютных кодов.
+
+    Использует Redis кэш для проверки, что все переданные в функцию коды валют
+    присутствуют в списке поддерживаемых валют. Если хотя бы один код валюты
+    не проходит проверку, будет возбуждено исключение BadRequestException.
+
+    Args:
+        func: Асинхронная функция, к которой применяется декоратор.
+
+    Returns:
+        Оригинальная функция с применённой проверкой валютных кодов.
+    """
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        """Проверка валют на валидность."""
 
         cache = await RedisClient.get_currency("currencies")
 
@@ -32,6 +42,20 @@ def check_currencies(func):
 
 
 def check_time(func):
+
+    """
+    Декоратор для проверки корректности переданных дат.
+
+    Убеждается, что все переданные даты в функцию находятся в допустимом
+    диапазоне между 1 января 1999 года и текущей датой минус 3 часа. Если
+    дата не укладывается в этот диапазон, возбуждается исключение BadRequestException.
+
+    Args:
+        func: Асинхронная функция, к которой применяется декоратор.
+
+    Returns:
+        Оригинальная функция с применённой проверкой дат.
+    """
     @wraps(func)
     async def wrapper(*args, **kwargs):
         min_date = date(1999, 1, 1)
@@ -53,7 +77,18 @@ async def get_exchange(
     currencies: list[str],
 ):
     """
-    Получает текущие обменные курсы для заданного списка валют относительно указанной базовой валюты.
+    Получение текущих обменных курсов для списка валют относительно базовой валюты.
+
+    Совершает HTTP-запрос к внешнему сервису обменных курсов для получения актуальных
+    стоимостей конвертации из базовой валюты в целевые. В случае если целевая и базовая
+    валюты совпадают, возбуждается BadRequestException.
+
+    Args:
+        source: Код базовой валюты в формате ISO 4217.
+        currencies: Список кодов целевых валют в формате ISO 4217.
+
+    Returns:
+        Словарь с данными об обменных курсах.
     """
 
     if currencies is not None:

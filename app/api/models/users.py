@@ -35,6 +35,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     created_at: Mapped[date] = mapped_column(default=date.today)
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="False")
+    image_path: Mapped[str] = mapped_column(nullable=True)
     balances = relationship(
         "Balance",
         collection_class=list,
