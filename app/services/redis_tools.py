@@ -20,8 +20,9 @@ class RedisClient:
     Attributes:
         __redis_connect (Redis): Подключение к Redis.
     """
+
     __redis_connect = aioredis.from_url(
-        "redis://localhost:6379", encoding="utf8", decode_responses=True
+        "redis://redis:6379", encoding="utf8", decode_responses=True
     )
 
     @classmethod

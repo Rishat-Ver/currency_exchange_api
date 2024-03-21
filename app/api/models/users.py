@@ -11,16 +11,28 @@ from sqlalchemy.orm import (
 
 
 class Base(DeclarativeBase):
+    """
+    Базовый класс для всех моделей. Определяет общие атрибуты и методы.
+    """
+
     __abstract__ = True
 
     @declared_attr.directive
     def __tablename__(cls):
+        """
+        Автоматически генерирует имя таблицы для модели, используя имя класса в нижнем регистре и добавляя 's' на конце.
+        """
         return f"{cls.__name__.lower()}s"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
 
 class Balance(Base):
+    """
+    Модель для учета баланса пользователя в определенной валюте.
+    Содержит информацию о валюте и количестве средств.
+    """
+
     currency: Mapped[str] = mapped_column(default="RUB", server_default="RUB")
     amount: Mapped[Numeric] = mapped_column(
         Numeric(precision=10, scale=2), default=0, server_default="0"
@@ -30,6 +42,10 @@ class Balance(Base):
 
 
 class User(Base):
+    """
+    Модель пользователя, содержащая основную информацию о пользователе, включая его балансы.
+    """
+
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(unique=True)
