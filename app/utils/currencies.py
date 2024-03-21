@@ -21,9 +21,9 @@ def check_currencies(func):
     Returns:
         Оригинальная функция с применённой проверкой валютных кодов.
     """
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
-
         cache = await RedisClient.get_currency("currencies")
 
         currencies = [
@@ -42,7 +42,6 @@ def check_currencies(func):
 
 
 def check_time(func):
-
     """
     Декоратор для проверки корректности переданных дат.
 
@@ -56,6 +55,7 @@ def check_time(func):
     Returns:
         Оригинальная функция с применённой проверкой дат.
     """
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         min_date = date(1999, 1, 1)
