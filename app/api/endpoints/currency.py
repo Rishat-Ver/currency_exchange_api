@@ -2,7 +2,6 @@ import json
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.requests import Request
 from fastapi_cache.decorator import cache
 from fastapi_limiter.depends import RateLimiter
 
