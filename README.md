@@ -187,7 +187,7 @@ http://localhost:8001/docs
 
 ## Использованные инструменты
 
-Проект **Currency Exchange App** построен на основе множества мощных инструментов и библиотек:
+В проекте **Currency Exchange API** использованы следующие инструменты:
 
 * [FastAPI](https://fastapi.tiangolo.com/) - веб-фреймворк приложения.
 * [Pydantic](https://pydantic-docs.helpmanual.io/) - для валидации и управления данными на основе аннотации типов.
