@@ -13,6 +13,9 @@ router = APIRouter(include_in_schema=False)
 
 
 class UserModelView(ModelView, model=User):
+
+    """Представление модели пользователя в админской панели."""
+
     column_list = [
         User.id,
         User.username,
@@ -20,12 +23,15 @@ class UserModelView(ModelView, model=User):
         User.created_at,
         User.balances,
         User.is_admin,
+        User.image_path,
     ]
     column_sortable_list = [User.id]
     column_searchable_list = [User.username, User.email]
 
 
 class BalanceModelView(ModelView, model=Balance):
+    """Представление модели баланса в админской панели."""
+
     column_list = [
         Balance.id,
         Balance.currency,
@@ -38,9 +44,22 @@ class BalanceModelView(ModelView, model=Balance):
 
 
 class AdminAuth(AuthenticationBackend):
-    """Вход в админку разрешен только админам."""
+    """
+    Кастомная аутентификация для доступа к админской панели.
+
+    Вход в админку разрешен только пользователям с правами админа.
+    """
 
     async def login(self, request: Request) -> bool:
+        """
+        Аутентификация пользователя при попытке входа в админскую панель.
+
+        Параметры:
+        - request (Request): Запрос на вход в админку.
+
+        Возвращает:
+        - bool: True, если аутентификация прошла успешно и пользователь имеет права админа, иначе False.
+        """
         async with sessionmanager.session() as session:
             form = await request.form()
             username = form["username"]
@@ -62,10 +81,28 @@ class AdminAuth(AuthenticationBackend):
         return False
 
     async def logout(self, request: Request) -> bool:
+        """
+        Выход пользователя из админской панели.
+
+        Параметры:
+        - request (Request): Запрос на выход из админки.
+
+        Возвращает:
+        - bool: Всегда True.
+        """
         request.session.clear()
         return True
 
     async def authenticate(self, request: Request) -> bool:
+        """
+        Проверка аутентификации пользователя в админской панели.
+
+        Параметры:
+        - request (Request): Запрос в админскую панель.
+
+        Возвращает:
+        - bool: True, если пользователь аутентифицирован, иначе False.
+        """
         token = request.session.get("token")
         if not token:
             return False
@@ -74,5 +111,11 @@ class AdminAuth(AuthenticationBackend):
 
 @router.post("/login")
 async def login(request: Request):
+    """
+    Эндпоинт для аутентификации пользователя и входа в админскую панель.
+
+    Параметры:
+    - request (Request): Запрос на вход в админку.
+    """
     auth_backend = AdminAuth(settings.AUTH.KEY)
     await auth_backend.login(request)

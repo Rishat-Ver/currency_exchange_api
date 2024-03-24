@@ -22,10 +22,23 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def verify_password(non_hashed_pass, hashed_pass):
+    """
+    Проверяет, совпадает ли нехешированный пароль с его хешированной версией.
+
+    :param non_hashed_pass: Нехешированный пароль.
+    :param hashed_pass: Хешированный пароль.
+    :return: True, если пароли совпадают, иначе False.
+    """
     return pwd_context.verify(non_hashed_pass, hashed_pass)
 
 
 def create_access_token(data: dict):
+    """
+    Создает JWT токен на основе предоставленных данных.
+
+    :param data: Данные для включения в токен.
+    :return: JWT токен.
+    """
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"expire": expire.strftime("%Y-%m-%d %H:%M:%S")})
@@ -34,6 +47,13 @@ def create_access_token(data: dict):
 
 
 def verify_access_token(token: str, credentials_exception):
+    """
+    Проверяет JWT токен и извлекает из него данные.
+
+    :param token: JWT токен для проверки.
+    :param credentials_exception: Исключение, которое будет вызвано в случае ошибки.
+    :return: Данные пользователя из токена.
+    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         id: str = payload.get("user_id")
@@ -51,7 +71,13 @@ async def login(
     userdetails: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_db_session),
 ):
-    """Авторизация юзера."""
+    """
+    Авторизует пользователя и возвращает токен доступа.
+
+    :param userdetails: Данные пользователя для входа, полученные из формы.
+    :param session: Сессия базы данных.
+    :return: Токен доступа и тип токена.
+    """
 
     print(userdetails)
     print(userdetails.username, userdetails.password)

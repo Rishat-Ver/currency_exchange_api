@@ -2,6 +2,8 @@ import json
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Query
+from fastapi_cache.decorator import cache
+from fastapi_limiter.depends import RateLimiter
 
 from app.api.models import User
 from app.api.schemas import ResponseCurrency
@@ -14,7 +16,7 @@ from app.utils.users import get_current_user
 router = APIRouter(prefix="/currency", tags=["Currency"])
 
 
-@router.get("/exchange_rate")
+@router.get("/exchange_rate", dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 @check_currencies
 async def get_exchange_rates(
     source: str = Query(default="USD", max_length=3),
@@ -42,7 +44,7 @@ async def get_exchange_rates(
     return response_data
 
 
-@router.get("/show_convert")
+@router.get("/show_convert", dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 @check_time
 @check_currencies
 async def show_convert(
@@ -89,9 +91,10 @@ async def show_convert(
     return data
 
 
-@router.get("/show_change")
+@router.get("/show_change", dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 @check_time
 @check_currencies
+@cache(expire=24 * 60 * 60)
 async def show_change(
     start_date: date = Query(
         default=date.today(),
@@ -132,9 +135,10 @@ async def show_change(
     return data
 
 
-@router.get("/historical")
+@router.get("/historical", dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 @check_time
 @check_currencies
+@cache(expire=24 * 60 * 60)
 async def show_historical(
     historical_date: date = Query(
         default=date.today(),
@@ -185,9 +189,10 @@ async def show_list(
     return json.loads(data)
 
 
-@router.get("/timeframe")
+@router.get("/timeframe", dependencies=[Depends(RateLimiter(times=1, seconds=5))])
 @check_time
 @check_currencies
+@cache(expire=300)
 async def show_timeframe(
     start_date: date = Query(
         default=date.today(),

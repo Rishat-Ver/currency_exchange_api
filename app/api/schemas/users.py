@@ -1,49 +1,48 @@
-import re
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr, field_validator, condecimal
+from pydantic import BaseModel, EmailStr, condecimal
 
 
 class Token(BaseModel):
+    """
+    Модель токена доступа, содержащая сам токен и тип токена.
+    """
+
     access_token: str
     token_type: str
 
 
 class DataToken(BaseModel):
+    """
+    Модель данных токена, используемая для валидации данных, извлекаемых из токена.
+    """
+
     id: int | None = None
 
 
 class UserBase(BaseModel):
+    """
+    Базовая модель пользователя.
+    """
+
     username: str
     email: EmailStr
     created_at: date
 
 
 class BalanceSchema(BaseModel):
+    """
+    Схема баланса, представляющая собой баланс пользователя в определенной валюте.
+    """
+
     amount: Decimal = condecimal(gt=Decimal(0))
     currency: str
 
 
-class CreateUserSchema(UserBase):
-    password: str
-
-    @field_validator("password")
-    def check_password(cls, v):
-        regex = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
-        if not re.fullmatch(regex, v):
-            raise ValueError(
-                f"the password must contain more than 8 characters"
-                f"and contain Latin letters of different case and numbers"
-            )
-        return v
-
-    @field_validator("username")
-    def check_username(cls, v):
-        assert v.isalnum()
-        assert v.istitle()
-        return v
-
-
 class ResponseUserBalance(UserBase):
+    """
+    Модель ответа API для баланса пользователя, содержащая базовую информацию о пользователе и его балансы.
+    """
+
     balances: list[BalanceSchema]
