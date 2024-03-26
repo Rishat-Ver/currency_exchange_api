@@ -192,7 +192,7 @@ http://localhost:8001/docs
 * [FastAPI](https://fastapi.tiangolo.com/) - веб-фреймворк приложения.
 * [Pydantic](https://pydantic-docs.helpmanual.io/) - для валидации и управления данными на основе аннотации типов.
 * [SQLAlchemy](https://www.sqlalchemy.org/) - для работы с базами данных через ORM и асинхронный SQL.
-* [AsyncPG](https://magicstack.github.io/asyncpg/current/) - асинхронный драйыер для работы с PostgreSQL.
+* [AsyncPG](https://magicstack.github.io/asyncpg/current/) - асинхронный драйвер для работы с PostgreSQL.
 * [Alembic](https://alembic.sqlalchemy.org/en/latest/) - инструмент миграций для SQLAlchemy.
 * [PyJWT](https://pyjwt.readthedocs.io/en/latest/) - реализация JWT для безопасной работы с токенами аутентификации.
 * [AIOHTTP](https://docs.aiohttp.org/en/stable/) - асинхронный HTTP-клиент/сервер для модуля asyncio.
