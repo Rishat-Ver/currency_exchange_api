@@ -86,7 +86,7 @@ currency_exchange_api/
    Выбрать Free Plan на https://apilayer.com/marketplace/currency_data-api
 5.  Запустите Docker Compose:
    ```bash
-   docker-compose up --build --remove-orphans
+   docker-compose up --build -d
    ```
 _Примечания:_
 
