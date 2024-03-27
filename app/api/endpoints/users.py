@@ -342,7 +342,7 @@ async def evaluate_balance_to_only_currency(
     }
 
     result = sum(
-        balance.amount / rates_user_currencies.get(balance.currency, 1)
+        balance.amount / Decimal(rates_user_currencies.get(balance.currency, 1))
         for balance in user.balances
         if balance.currency in rates_user_currencies
         or balance.currency == source.upper()
