@@ -242,7 +242,7 @@ async def convert_user_currency(
         raise BadRequestException(detail="Insufficient funds")
 
     exchange = await get_exchange(source=source, currencies=[currency])
-    exchange_rate = exchange["quotes"][f"{source}{currency}"]
+    exchange_rate = Decimal(exchange["quotes"][f"{source}{currency}"])
 
     target_balance = await find_or_create_balance(session, user.id, currency)
     source_balance.amount -= amount
