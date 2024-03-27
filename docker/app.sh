@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-export PYTHONPATH=/currency_exchange_api/:$PYTHONPATH
+export PYTHONPATH=currency_exchange_api/:$PYTHONPATH
 
 
 alembic upgrade head
