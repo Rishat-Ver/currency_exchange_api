@@ -1,4 +1,5 @@
 import shutil
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import (
@@ -205,7 +206,7 @@ async def convert_user_currency(
         min_length=3,
         max_length=3,
     ),
-    amount: float = Query(description="The amount to be converted.", gt=0),
+    amount: Decimal = Query(description="The amount to be converted.", gt=0),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -219,7 +220,7 @@ async def convert_user_currency(
     Параметры запроса:
     - source (str): Трехбуквенный код валюты, из которой будет производиться конвертация.
     - target (str): Трехбуквенный код валюты, в которую будет производиться конвертация.
-    - amount (float): Сумма в валюте source, которую пользователь хочет конвертировать.
+    - amount (Decimal): Сумма в валюте source, которую пользователь хочет конвертировать.
 
     Ответ:
     - Объект с информацией о балансе пользователя после конвертации (ResponseUserBalance).
