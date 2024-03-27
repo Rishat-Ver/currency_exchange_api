@@ -1,5 +1,6 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
+from fastapi_limiter.depends import WebSocketRateLimiter
 
 from app.core.database import get_db_session
 from app.utils.users import get_user_with_token
@@ -29,6 +30,7 @@ class WebSocketManager:
             websocket (WebSocket): Экземпляр WebSocket соединения пользователя.
         """
         await websocket.accept()
+
         self.active_websockets[user_id] = websocket
 
     async def disconnect(self, user_id: int):
@@ -87,8 +89,13 @@ async def websocket_(websocket: WebSocket, session=Depends(get_db_session)):
     """
     user = await get_user_with_token(websocket, session)
     await ws_manager.connect(user.id, websocket)
+    ratelimit = WebSocketRateLimiter(times=1, seconds=5)
     try:
         while True:
             data = await websocket.receive_text()
+            try:
+                await ratelimit(websocket, context_key=str(user.id))
+            except HTTPException:
+                await websocket.send_text("message sending limit exceeded")
     except WebSocketDisconnect:
         await ws_manager.disconnect(user.id)
